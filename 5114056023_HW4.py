@@ -56,7 +56,7 @@ prompt = f"""
 if st.button("生成旅遊行程"):
     with st.spinner("AI 規劃中..."):
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "你是專業旅遊規劃 AI"},
                 {"role": "user", "content": prompt}

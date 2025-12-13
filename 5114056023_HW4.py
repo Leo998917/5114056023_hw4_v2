@@ -1,113 +1,78 @@
 import streamlit as st
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import PromptTemplate
+from datetime import date
+import google.generativeai as genai
 
-# ================= ⚠️ 安全設定 ⚠️ =================
-# 在這裡填入你的 API Key
-# 注意：上傳 GitHub 前請務必刪除此行，或改用 st.secrets，否則 Key 會外洩！
-GOOGLE_API_KEY = "AIzaSyC63w_OUrzcg5EEVpihlj9FGKAIzQa30KA" 
+# =====================
+# Streamlit Page Config
+# =====================
+st.set_page_config(
+    page_title="AI Travel Planner (Gemini)",
+    page_icon="🧳",
+    layout="centered"
+)
 
-# ================= 配置設定 =================
-st.set_page_config(page_title="TravelGenie ✈️ 智慧旅遊規劃師 (Gemini版)", page_icon="✈️")
+st.title("🧳 AI 時間與地點感知旅遊行程生成系統")
+st.caption("Generative AI × Gemini × Agent-based Design")
 
-# 側邊欄 (只保留作者資訊，不再需要輸入 Key)
-with st.sidebar:
-    st.header("關於專案")
-    st.markdown("此專題為 **Taica AIGC 課程** 作業展示")
-    st.markdown("Powered by **Google Gemini**")
-    st.markdown("Developed by [Your Name]")
+# =====================
+# Gemini API Key (Streamlit Secrets)
+# =====================
+genai.configure(api_key=st.secrets["AIzaSyC63w_OUrzcg5EEVpihlj9FGKAIzQa30KA"])
 
-# ================= 主介面設計 =================
-st.title("🌍 TravelGenie 智慧旅遊規劃師")
-st.markdown("### 輸入您的時間與地點，為您生成專屬旅遊攻略")
+model = genai.GenerativeModel("gemini-1.5-flash")
 
-col1, col2 = st.columns(2)
+# =====================
+# User Input
+# =====================
+city = st.text_input("📍 旅遊城市", "Tokyo")
+start_date = st.date_input("📅 出發日期", date.today())
+days = st.slider("🗓️ 旅遊天數", 1, 7, 3)
 
-with col1:
-    destination = st.text_input("📍 您想去哪裡旅遊？", "日本京都")
-    travel_style = st.selectbox(
-        "🎒 您的旅遊風格是？",
-        ["輕鬆慢活 (Relaxing)", "緊湊充實 (Packed)", "美食探店 (Foodie)", "文化歷史 (Cultural)", "親子同遊 (Family)"]
-    )
+preference = st.multiselect(
+    "🎯 旅遊偏好",
+    ["美食", "拍照", "文化", "親子", "自然", "購物"],
+    default=["美食", "拍照"]
+)
 
-with col2:
-    travel_dates = st.date_input("📅 選擇旅遊日期範圍", [])
+# =====================
+# Prompt Builder (Agent Concept)
+# =====================
+def build_prompt(city, start_date, days, preference):
+    return f"""
+你是一個專業的旅遊規劃 AI Agent，
+請根據以下條件生成完整旅遊行程與攻略：
 
-# ================= 核心邏輯 (Agent) =================
-def generate_itinerary(dest, dates, style):
-    # 使用全域變數的 API Key
-    if not GOOGLE_API_KEY or "貼在這裡" in GOOGLE_API_KEY:
-        return "⚠️ 請先在程式碼中填入正確的 Google API Key！"
-    
-    try:
-        # 初始化 Gemini
-        llm = ChatGoogleGenerativeAI(
-            # 修改這一行
-            model="gemini-pro",
-            temperature=0.7, 
-            google_api_key=GOOGLE_API_KEY
-        )
-    except Exception as e:
-        return f"API 設定錯誤: {str(e)}"
+【旅遊資訊】
+- 城市：{city}
+- 出發日期：{start_date}
+- 旅遊天數：{days} 天
+- 旅遊偏好：{', '.join(preference)}
 
-    # 計算天數
-    if len(dates) == 2:
-        start_date = dates[0]
-        end_date = dates[1]
-        days = (end_date - start_date).days + 1
-        date_info = f"從 {start_date} 到 {end_date}，共 {days} 天"
-    else:
-        return "⚠️ 請選擇完整的開始與結束日期。"
+【規劃規則】
+1. 每一天請分為：早上 / 下午 / 晚上
+2. 行程需考慮地理合理性與移動距離
+3. 結合生成式 AI 自然語言敘述
+4. 最後請附上「旅遊小提醒」
+5. 使用繁體中文輸出
 
-    # Prompt 設計
-    template = """
-    你是一位擁有 20 年經驗的專業在地導遊與旅遊規劃師。
-    請根據以下使用者的需求，規劃一份詳細的旅遊行程：
+請直接輸出完整旅遊行程與攻略內容。
+"""
 
-    **使用者需求：**
-    - 目的地：{destination}
-    - 時間範圍：{date_info}
-    - 旅遊風格：{style}
+# =====================
+# Generate Button
+# =====================
+if st.button("✨ 生成旅遊行程"):
+    with st.spinner("Gemini AI 正在規劃行程中..."):
+        prompt = build_prompt(city, start_date, days, preference)
 
-    **你的任務：**
-    1. 請為每一天規劃「上午」、「下午」、「晚上」的行程。
-    2. 包含推薦的景點、必吃美食（請提供具體餐廳名稱）。
-    3. 提供點對點之間的簡單交通建議。
-    4. 根據「{style}」調整行程的節奏。
-    
-    **輸出格式要求：**
-    - 請使用 Markdown 格式。
-    - 每一天請用 H3 標題 (### 第 X 天：主題)。
-    - 重要地點請用 **粗體** 標示。
-    - 最後請附上一段 100 字以內的「旅遊小貼士」(天氣、穿著、注意事項)。
+        response = model.generate_content(prompt)
+        result = response.text
 
-    開始規劃：
-    """
+    st.success("行程生成完成！")
+    st.markdown(result)
 
-    prompt = PromptTemplate(
-        input_variables=["destination", "date_info", "style"],
-        template=template
-    )
-
-    chain = prompt | llm
-    
-    with st.spinner('🤖 Gemini 導遊正在為您規劃行程中，請稍候...'):
-        try:
-            response = chain.invoke({
-                "destination": dest,
-                "date_info": date_info,
-                "style": style
-            })
-            return response.content
-        except Exception as e:
-            return f"生成失敗，請檢查 API Key 是否正確。\n錯誤訊息: {e}"
-
-# ================= 觸發按鈕 =================
-if st.button("🚀 開始生成行程"):
-    if destination and len(travel_dates) == 2:
-        # 不再需要從前端傳入 API Key
-        result = generate_itinerary(destination, travel_dates, travel_style)
-        st.markdown("---")
-        st.markdown(result)
-    else:
-        st.error("請確認「目的地」與「日期範圍」皆已填寫完整。")
+# =====================
+# Footer
+# =====================
+st.markdown("---")
+st.caption("TAICA AIGC 課程專題｜NCCU｜Powered by Google Gemini")

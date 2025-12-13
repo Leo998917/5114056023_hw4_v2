@@ -1,32 +1,26 @@
 import streamlit as st
 from datetime import date
-import requests
-import json
+from openai import OpenAI
 
+# =====================
+# Page Config
+# =====================
 st.set_page_config(
-    page_title="AI Travel Planner (Gemini)",
+    page_title="AI Travel Planner",
     page_icon="🧳"
 )
 
-st.title("🧳 AI 時間與地點感知旅遊行程生成系統 - Gemini")
-st.caption("Generative AI × Gemini (REST API)")
+st.title("🧳 AI 時間與地點感知旅遊行程生成系統")
+st.caption("Generative AI × LLM (OpenAI)")
 
 # =====================
 # API Key 從 Streamlit Secrets 讀取
 # =====================
-if "GEMINI_API_KEY" not in st.secrets:
-    st.warning("請在 Streamlit Cloud 的 Settings → Secrets 設定 GEMINI_API_KEY")
+if "OPENAI_API_KEY" not in st.secrets:
+    st.warning("請在 Streamlit Cloud 的 Settings → Secrets 設定 OPENAI_API_KEY")
     st.stop()
 
-GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-
-# =====================
-# 請填入你實際可用的 Gemini 模型名稱
-# 例如：gemini-1.5-pro 或 gemini-1.5-flash
-# =====================
-GEMINI_MODEL = "gemini-1.5-pro"  # 請確認你的 Key 可使用此模型
-
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent"
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # =====================
 # 使用者輸入
@@ -60,34 +54,18 @@ prompt = f"""
 # 生成行程
 # =====================
 if st.button("生成旅遊行程"):
-    with st.spinner("Gemini AI 規劃中..."):
-        payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{"text": prompt}]
-                }
-            ]
-        }
-
-        response = requests.post(
-            f"{GEMINI_URL}?key={GEMINI_API_KEY}",
-            headers={"Content-Type": "application/json"},
-            json=payload
+    with st.spinner("AI 規劃中..."):
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "你是專業旅遊規劃 AI"},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7
         )
 
-        if response.status_code == 200:
-            result = response.json()
-            try:
-                text = result["candidates"][0]["content"]["parts"][0]["text"]
-                st.markdown(text)
-            except:
-                st.error("API 回傳格式異常，請確認模型與 Key 是否正確")
-                st.code(response.text)
-        else:
-            st.error("Gemini API 呼叫失敗")
-            st.code(response.text)
+        result = response.choices[0].message.content
+        st.markdown(result)
 
 st.markdown("---")
 st.caption("TAICA AIGC 課程專題｜NCCU")
-

@@ -42,7 +42,7 @@ def generate_itinerary(dest, dates, style):
     try:
         # 初始化 Gemini
         llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash", 
+            model="gemini-1.5-flash-latest",
             temperature=0.7, 
             google_api_key=GOOGLE_API_KEY
         )

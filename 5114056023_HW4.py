@@ -4,25 +4,32 @@ import requests
 import json
 
 st.set_page_config(
-    page_title="AI Travel Planner",
+    page_title="AI Travel Planner (Gemini)",
     page_icon="🧳"
 )
 
-st.title("🧳 AI 時間與地點感知旅遊行程生成系統")
-st.caption("Generative AI × Gemini 1.5 (REST v1)")
+st.title("🧳 AI 時間與地點感知旅遊行程生成系統 - Gemini")
+st.caption("Generative AI × Gemini (REST API)")
 
 # =====================
-# Gemini API Key（作業寫死 OK）
+# API Key 從 Streamlit Secrets 讀取
 # =====================
-GEMINI_API_KEY = "AIzaSyC63w_OUrzcg5EEVpihlj9FGKAIzQa30KA"
+if "GEMINI_API_KEY" not in st.secrets:
+    st.warning("請在 Streamlit Cloud 的 Settings → Secrets 設定 GEMINI_API_KEY")
+    st.stop()
 
-GEMINI_URL = (
-    "https://generativelanguage.googleapis.com/v1/models/"
-    "gemini-1.5-flash:generateContent"
-)
+GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 
 # =====================
-# User Input
+# 請填入你實際可用的 Gemini 模型名稱
+# 例如：gemini-1.5-pro 或 gemini-1.5-flash
+# =====================
+GEMINI_MODEL = "gemini-1.5-pro"  # 請確認你的 Key 可使用此模型
+
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent"
+
+# =====================
+# 使用者輸入
 # =====================
 city = st.text_input("旅遊城市", "Tokyo")
 start_date = st.date_input("出發日期", date.today())
@@ -50,7 +57,7 @@ prompt = f"""
 """
 
 # =====================
-# Generate
+# 生成行程
 # =====================
 if st.button("生成旅遊行程"):
     with st.spinner("Gemini AI 規劃中..."):
@@ -71,11 +78,16 @@ if st.button("生成旅遊行程"):
 
         if response.status_code == 200:
             result = response.json()
-            text = result["candidates"][0]["content"]["parts"][0]["text"]
-            st.markdown(text)
+            try:
+                text = result["candidates"][0]["content"]["parts"][0]["text"]
+                st.markdown(text)
+            except:
+                st.error("API 回傳格式異常，請確認模型與 Key 是否正確")
+                st.code(response.text)
         else:
             st.error("Gemini API 呼叫失敗")
             st.code(response.text)
 
 st.markdown("---")
 st.caption("TAICA AIGC 課程專題｜NCCU")
+

@@ -1,6 +1,7 @@
 import streamlit as st
 from datetime import date
-import google.generativeai as genai
+import requests
+import json
 
 # =====================
 # Page Config
@@ -11,16 +12,17 @@ st.set_page_config(
 )
 
 st.title("🧳 AI 時間與地點感知旅遊行程生成系統")
-st.caption("Generative AI × Gemini")
+st.caption("Generative AI × Gemini (REST API)")
 
 # =====================
-# Gemini API (寫死版)
+# Gemini API Key（作業寫死 OK）
 # =====================
-genai.configure(
-    api_key="AIzaSyC63w_OUrzcg5EEVpihlj9FGKAIzQa30KA"
+GEMINI_API_KEY = "AIzaSyC63w_OUrzcg5EEVpihlj9FGKAIzQa30KA"
+
+GEMINI_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/models/"
+    "gemini-pro:generateContent"
 )
-
-model = genai.GenerativeModel("gemini-pro")
 
 # =====================
 # User Input
@@ -54,8 +56,30 @@ prompt = f"""
 # Generate
 # =====================
 if st.button("生成旅遊行程"):
-    response = model.generate_content(prompt)
-    st.markdown(response.text)
+    with st.spinner("Gemini AI 規劃中..."):
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt}
+                    ]
+                }
+            ]
+        }
+
+        response = requests.post(
+            f"{GEMINI_URL}?key={GEMINI_API_KEY}",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(payload)
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+            text = result["candidates"][0]["content"]["parts"][0]["text"]
+            st.markdown(text)
+        else:
+            st.error("Gemini API 呼叫失敗")
+            st.code(response.text)
 
 st.markdown("---")
-st.caption("TAICA AIGC 課程專題")
+st.caption("TAICA AIGC 課程專題｜NCCU")

@@ -21,8 +21,9 @@ GEMINI_API_KEY = "AIzaSyC63w_OUrzcg5EEVpihlj9FGKAIzQa30KA"
 
 GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-pro:generateContent"
+    "gemini-1.5-pro-latest:generateContent"
 )
+
 
 # =====================
 # User Input

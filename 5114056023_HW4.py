@@ -20,7 +20,7 @@ genai.configure(
     api_key="AIzaSyC63w_OUrzcg5EEVpihlj9FGKAIzQa30KA"
 )
 
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-pro")
 
 # =====================
 # User Input

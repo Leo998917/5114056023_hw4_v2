@@ -32,7 +32,7 @@ with col1:
 
 with col2:
     travel_dates = st.date_input("📅 選擇旅遊日期範圍", [])
-S
+
 # ================= 核心邏輯 (Agent) =================
 def generate_itinerary(dest, dates, style):
     # 使用全域變數的 API Key

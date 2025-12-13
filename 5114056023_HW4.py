@@ -5,7 +5,7 @@ from langchain_core.prompts import PromptTemplate
 # ================= ⚠️ 安全設定 ⚠️ =================
 # 在這裡填入你的 API Key
 # 注意：上傳 GitHub 前請務必刪除此行，或改用 st.secrets，否則 Key 會外洩！
-GOOGLE_API_KEY = "AIzaSyBeFmDMw6bDQ68Ofap6qwq2YVFy3xl2Hgc" 
+GOOGLE_API_KEY = "AIzaSyC63w_OUrzcg5EEVpihlj9FGKAIzQa30KA" 
 
 # ================= 配置設定 =================
 st.set_page_config(page_title="TravelGenie ✈️ 智慧旅遊規劃師 (Gemini版)", page_icon="✈️")

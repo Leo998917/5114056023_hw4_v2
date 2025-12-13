@@ -3,16 +3,13 @@ from datetime import date
 import requests
 import json
 
-# =====================
-# Page Config
-# =====================
 st.set_page_config(
     page_title="AI Travel Planner",
     page_icon="🧳"
 )
 
 st.title("🧳 AI 時間與地點感知旅遊行程生成系統")
-st.caption("Generative AI × Gemini (REST API)")
+st.caption("Generative AI × Gemini 1.5 (REST v1)")
 
 # =====================
 # Gemini API Key（作業寫死 OK）
@@ -20,11 +17,9 @@ st.caption("Generative AI × Gemini (REST API)")
 GEMINI_API_KEY = "AIzaSyC63w_OUrzcg5EEVpihlj9FGKAIzQa30KA"
 
 GEMINI_URL = (
-    "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-1.5-flash-latest:generateContent"
+    "https://generativelanguage.googleapis.com/v1/models/"
+    "gemini-1.5-flash:generateContent"
 )
-
-
 
 # =====================
 # User Input
@@ -62,9 +57,8 @@ if st.button("生成旅遊行程"):
         payload = {
             "contents": [
                 {
-                    "parts": [
-                        {"text": prompt}
-                    ]
+                    "role": "user",
+                    "parts": [{"text": prompt}]
                 }
             ]
         }
@@ -72,7 +66,7 @@ if st.button("生成旅遊行程"):
         response = requests.post(
             f"{GEMINI_URL}?key={GEMINI_API_KEY}",
             headers={"Content-Type": "application/json"},
-            data=json.dumps(payload)
+            json=payload
         )
 
         if response.status_code == 200:

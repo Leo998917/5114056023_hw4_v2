@@ -3,33 +3,53 @@ from datetime import date
 import google.generativeai as genai
 
 # =====================
-# Page Config
+# 1. Page Config
 # =====================
 st.set_page_config(
-    page_title="AI Travel Planner (Gemini)",
+    page_title="AI Travel Planner (Auto-Detect)",
     page_icon="🧳"
 )
 
-st.title("🧳 AI 時間與地點感知旅遊行程生成系統")
-st.caption("Powered by Google Gemini (Auto-Fallback)")
-
 # =====================
-# API Key 設定
+# 2. 安全性與 API 設定
 # =====================
 if "GOOGLE_API_KEY" not in st.secrets:
-    st.error("找不到 API Key！請在 Streamlit Cloud 的 Settings → Secrets 設定 GOOGLE_API_KEY")
+    st.error("❌ 錯誤：未偵測到 API Key。請在 Streamlit Cloud 的 Settings → Secrets 設定 GOOGLE_API_KEY")
     st.stop()
 
-# 設定 Google Gemini
+# 設定 Gemini
 try:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 except Exception as e:
-    st.error(f"API Key 設定失敗: {e}")
+    st.error(f"❌ API Key 設定失敗: {e}")
     st.stop()
 
 # =====================
-# 使用者輸入
+# 3. 核心邏輯：自動偵測可用模型 (這是成功的關鍵！)
 # =====================
+target_model_name = ""
+try:
+    # 找出所有支援 'generateContent' 的模型
+    available_models = [m for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+    
+    if not available_models:
+        st.error("❌ 您的 API Key 連線成功，但該帳號沒有任何可用的模型權限 (Access Denied)。")
+        st.stop()
+    
+    # 自動選用第一個可用的模型 (例如 'models/gemini-pro')
+    target_model_object = available_models[0]
+    target_model_name = target_model_object.name
+    
+except Exception as e:
+    st.error(f"❌ 無法取得模型清單 (可能原因：API Key 錯誤或網路問題): {e}")
+    st.stop()
+
+# =====================
+# 4. UI 介面
+# =====================
+st.title("🧳 AI 時間與地點感知旅遊行程生成系統")
+st.caption(f"🚀 System Status: Online | Using Model: `{target_model_name}`") # 顯示抓到的模型
+
 col1, col2 = st.columns(2)
 
 with col1:
@@ -45,7 +65,7 @@ with col2:
     )
 
 # =====================
-# Prompt 設計
+# 5. Prompt 設計
 # =====================
 prompt = f"""
 你是一個專業的旅遊規劃 AI Agent。
@@ -64,43 +84,25 @@ prompt = f"""
 """
 
 # =====================
-# 核心功能：智慧模型切換 (Smart Fallback)
-# =====================
-def generate_content_safe(prompt_text):
-    # 定義嘗試順序：先試最快的 Flash，不行就換穩定的 Pro
-    models_to_try = ['gemini-1.5-flash', 'gemini-pro']
-    
-    errors = []
-    
-    for model_name in models_to_try:
-        try:
-            # 建立模型實例
-            model = genai.GenerativeModel(model_name)
-            # 嘗試生成
-            response = model.generate_content(prompt_text)
-            return response.text, model_name # 成功就回傳結果和使用的模型
-        except Exception as e:
-            errors.append(f"{model_name}: {str(e)}")
-            continue # 失敗就試下一個
-            
-    # 如果都失敗，拋出最後一個錯誤
-    raise Exception(f"所有模型皆嘗試失敗。\n詳細錯誤: {errors}")
-
-# =====================
-# 觸發按鈕
+# 6. 生成行程
 # =====================
 if st.button("生成旅遊行程"):
-    with st.spinner("AI 正在規劃中 (自動選擇最佳模型)..."):
+    with st.spinner(f"正在呼叫 {target_model_name} 為您規劃..."):
         try:
-            result_text, used_model = generate_content_safe(prompt)
+            # 使用剛剛自動抓到的模型名稱來初始化
+            model = genai.GenerativeModel(target_model_name)
             
-            st.success(f"✅ 行程生成成功！(使用模型: {used_model})")
+            # 發送請求
+            response = model.generate_content(prompt)
+            
+            # 顯示結果
             st.markdown("---")
-            st.markdown(result_text)
+            st.markdown(response.text)
+            st.success("✅ 行程生成完成！")
             
         except Exception as e:
-            st.error("生成失敗，請檢查 API Key 權限。")
-            st.expander("查看錯誤詳情").write(e)
+            st.error(f"生成失敗: {e}")
+            st.info("若出現錯誤，請確認您的 API 額度是否足夠。")
 
 st.markdown("---")
 st.caption("TAICA AIGC 課程專題｜NCCU")
